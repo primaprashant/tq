@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import tempfile
-from pathlib import Path  # new import
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -36,7 +36,7 @@ def mock_db():
         db.init_db()
         yield
 
-    Path(temp_db_path).unlink()  # changed from os.unlink(temp_db_path)
+    Path(temp_db_path).unlink()
 
 
 def test_init_db_creates_tables(mock_db):

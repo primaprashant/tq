@@ -1,7 +1,7 @@
 import os
 import subprocess
 import tempfile
-from pathlib import Path  # new import
+from pathlib import Path
 
 import pytest
 
@@ -16,6 +16,7 @@ def test_env():
         # Disable Rich's color output for testing
         env["NO_COLOR"] = "1"
         # Force terminal width for consistent table formatting
+        env["COLUMNS"] = "100"
         yield env
 
 

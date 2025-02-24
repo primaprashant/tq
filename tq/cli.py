@@ -10,10 +10,8 @@ from rich.text import Text
 
 from tq import db
 
-# Initialize Rich console
 console = Console()
 
-# Styles
 SUCCESS_STYLE = Style(color="green", bold=True)
 ERROR_STYLE = Style(color="red", bold=True)
 QUEUE_STYLE = Style(color="blue", bold=True)
