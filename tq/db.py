@@ -1,11 +1,12 @@
 import os
 import sqlite3
 import time
+from pathlib import Path  # new import
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 def get_db_path() -> str:
-    return os.environ.get("TQ_DB_PATH", os.path.expanduser("~/.tq.sqlite"))
+    return os.environ.get("TQ_DB_PATH", Path("~/.tq.sqlite").expanduser())
 
 
 def init_db() -> None:
@@ -22,7 +23,7 @@ def init_db() -> None:
             )
         """)
         cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_queue_completed 
+            CREATE INDEX IF NOT EXISTS idx_queue_completed
             ON tasks(queue_name, completed_at)
         """)
 
@@ -37,7 +38,7 @@ def add_task(task_text: str, queue_name: str = "default") -> bool:
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT id FROM tasks 
+            SELECT id FROM tasks
             WHERE queue_name = ? AND task_text = ? AND completed_at IS NULL
         """,
             (queue_name, task_text),
@@ -61,8 +62,8 @@ def list_tasks(queue_name: str = "default") -> List[Dict[str, Any]]:
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT id, task_text, created_at 
-            FROM tasks 
+            SELECT id, task_text, created_at
+            FROM tasks
             WHERE queue_name = ? AND completed_at IS NULL
             ORDER BY created_at ASC
         """,

@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tempfile
+from pathlib import Path  # new import
 
 import pytest
 
@@ -9,13 +10,12 @@ import pytest
 def test_env():
     """Create a test environment with a dedicated database file."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        db_path = os.path.join(temp_dir, "test.sqlite")
+        db_path = Path(temp_dir) / "test.sqlite"  # changed from os.path.join()
         env = os.environ.copy()
-        env["TQ_DB_PATH"] = db_path
+        env["TQ_DB_PATH"] = str(db_path)
         # Disable Rich's color output for testing
         env["NO_COLOR"] = "1"
         # Force terminal width for consistent table formatting
-        env["COLUMNS"] = "100"
         yield env
 
 

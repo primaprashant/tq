@@ -3,6 +3,7 @@ import shutil
 import sqlite3
 import tempfile
 import time
+from pathlib import Path  # new import
 from unittest.mock import patch
 
 import pytest
@@ -13,8 +14,8 @@ from tq import db
 @pytest.fixture
 def temp_db():
     temp_dir = tempfile.mkdtemp()
-    db_path = os.path.join(temp_dir, "test.sqlite")
-    with patch.dict(os.environ, {"TQ_DB_PATH": db_path}):
+    db_path = Path(temp_dir) / "test.sqlite"  # changed from os.path.join()
+    with patch.dict(os.environ, {"TQ_DB_PATH": str(db_path)}):
         db.init_db()
         yield db_path
     shutil.rmtree(temp_dir)
@@ -31,13 +32,13 @@ def populated_db(temp_db):
 
 def test_get_db_path_default():
     with patch.dict(os.environ, {}, clear=True):
-        assert db.get_db_path() == os.path.expanduser("~/.tq.sqlite")
+        assert str(db.get_db_path()) == str(Path("~/.tq.sqlite").expanduser())  # converted to string
 
 
 def test_get_db_path_custom():
     custom_path = "/tmp/custom.sqlite"
     with patch.dict(os.environ, {"TQ_DB_PATH": custom_path}):
-        assert db.get_db_path() == custom_path
+        assert str(db.get_db_path()) == custom_path  # converted to string
 
 
 def test_init_db(temp_db):

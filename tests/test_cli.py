@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import tempfile
+from pathlib import Path  # new import
 from unittest import mock
 
 import pytest
@@ -35,7 +36,7 @@ def mock_db():
         db.init_db()
         yield
 
-    os.unlink(temp_db_path)
+    Path(temp_db_path).unlink()  # changed from os.unlink(temp_db_path)
 
 
 def test_init_db_creates_tables(mock_db):
@@ -211,7 +212,7 @@ def test_unicode_characters(runner, mock_db, mock_console):
 
     result = runner.invoke(cli.cli, ["pop", unicode_queue])
     assert result.exit_code == 0
-    assert unicode_task in result.output    
+    assert unicode_task in result.output
 
 
 def test_special_characters_in_task(runner, mock_db, mock_console):
