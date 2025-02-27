@@ -1,0 +1,27 @@
+[project]
+name = "tq"
+version = "1.0.0"
+description = "A Minimal CLI for Queue-Based Task Tracking"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "click>=8.1.8",
+    "rich>=13.9.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3.4",
+    "ruff>=0.9.5",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "W", "TID", "PTH", "Q"]
