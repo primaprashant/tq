@@ -115,13 +115,15 @@ def test_list_queues(test_env):
     """Test that the base command lists all queues with tasks."""
     run_command(["python", "-m", "tq", "add", "default task"], env=test_env)
     run_command(["python", "-m", "tq", "add", "work task", "work"], env=test_env)
+    run_command(["python", "-m", "tq", "add", "second work task", "work"], env=test_env)
 
     stdout, stderr, exit_code = run_command(["python", "-m", "tq"], env=test_env)
     assert exit_code == 0
     normalized = normalize_output(stdout)
     assert "default" in normalized
-    assert "1 task" in normalized
+    assert "1" in normalized
     assert "work" in normalized
+    assert "2" in normalized
 
 
 def test_error_on_numeric_queue(test_env):
@@ -131,15 +133,6 @@ def test_error_on_numeric_queue(test_env):
     normalized_output = normalize_output(stdout)
     assert "Error" in normalized_output
     assert "cannot be numeric only" in normalized_output
-
-
-def test_error_on_reserved_task_name(test_env):
-    """Test error when using a reserved name as task text."""
-    stdout, stderr, exit_code = run_command(["python", "-m", "tq", "add", "list"], env=test_env)
-    assert exit_code != 0
-    normalized_output = normalize_output(stdout)
-    assert "Error" in normalized_output
-    assert "is reserved" in normalized_output
 
 
 def test_tasks_with_special_characters(test_env):

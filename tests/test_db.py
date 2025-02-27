@@ -9,6 +9,14 @@ from unittest.mock import patch
 import pytest
 
 from tq import db
+from tq.exceptions import (
+    ConfigError,
+    DatabaseError,
+    EmptyQueueError,
+    TaskAlreadyExistsError,
+    TaskError,
+    TaskNotFoundError,
+)
 
 
 @pytest.fixture
@@ -41,6 +49,12 @@ def test_get_db_path_custom():
         assert str(db.get_db_path()) == custom_path
 
 
+def test_get_db_path_error():
+    with patch("pathlib.Path.expanduser", side_effect=Exception("Access denied")):
+        with pytest.raises(ConfigError, match="Failed to determine database path"):
+            db.get_db_path()
+
+
 def test_init_db(temp_db):
     with sqlite3.connect(temp_db) as conn:
         cursor = conn.cursor()
@@ -48,6 +62,12 @@ def test_init_db(temp_db):
         assert cursor.fetchone() is not None
         cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_queue_completed'")
         assert cursor.fetchone() is not None
+
+
+def test_init_db_error():
+    with patch("sqlite3.connect", side_effect=sqlite3.Error("Connection failed")):
+        with pytest.raises(DatabaseError, match="Failed to initialize database"):
+            db.init_db()
 
 
 def test_add_task(temp_db):
@@ -69,18 +89,20 @@ def test_add_task_to_custom_queue(temp_db):
 
 
 def test_add_duplicate_task(temp_db):
-    assert db.add_task("Duplicate task")
-    assert db.add_task("Duplicate task") is False
-
-
-def test_add_task_reserved_name():
-    with pytest.raises(ValueError, match="reserved"):
-        db.add_task("list")
+    db.add_task("Duplicate task")
+    with pytest.raises(TaskAlreadyExistsError, match="Task already exists"):
+        db.add_task("Duplicate task")
 
 
 def test_add_task_numeric_queue():
-    with pytest.raises(ValueError, match="cannot be numeric only"):
+    with pytest.raises(TaskError, match="cannot be numeric only"):
         db.add_task("Task", "123")
+
+
+def test_add_task_database_error():
+    with patch("sqlite3.connect", side_effect=sqlite3.Error("Failed to connect")):
+        with pytest.raises(DatabaseError, match="Failed to add task"):
+            db.add_task("Task with DB error")
 
 
 def test_list_tasks_empty(temp_db):
@@ -105,8 +127,15 @@ def test_list_tasks_nonexistent_queue(temp_db):
     assert db.list_tasks("nonexistent") == []
 
 
+def test_list_tasks_database_error():
+    with patch("sqlite3.connect", side_effect=sqlite3.Error("Connection failed")):
+        with pytest.raises(DatabaseError, match="Failed to list tasks"):
+            db.list_tasks()
+
+
 def test_pop_last_empty(temp_db):
-    assert db.pop_last() is None
+    with pytest.raises(EmptyQueueError, match="No tasks in 'default' queue"):
+        db.pop_last()
 
 
 def test_pop_last(populated_db):
@@ -123,8 +152,15 @@ def test_pop_last_custom_queue(populated_db):
     assert len(tasks) == 1 and tasks[0]["task_text"] == "Project task"
 
 
+def test_pop_last_database_error():
+    with patch("sqlite3.connect", side_effect=sqlite3.Error("Connection failed")):
+        with pytest.raises(DatabaseError, match="Failed to pop last task"):
+            db.pop_last()
+
+
 def test_pop_first_empty(temp_db):
-    assert db.pop_first() is None
+    with pytest.raises(EmptyQueueError, match="No tasks in 'default' queue"):
+        db.pop_first()
 
 
 def test_pop_first(populated_db):
@@ -141,8 +177,15 @@ def test_pop_first_custom_queue(populated_db):
     assert len(tasks) == 1 and tasks[0]["task_text"] == "Another project task"
 
 
+def test_pop_first_database_error():
+    with patch("sqlite3.connect", side_effect=sqlite3.Error("Connection failed")):
+        with pytest.raises(DatabaseError, match="Failed to pop first task"):
+            db.pop_first()
+
+
 def test_delete_task_nonexistent(temp_db):
-    assert db.delete_task(999) is None
+    with pytest.raises(TaskNotFoundError, match="Task with ID 999 not found"):
+        db.delete_task(999)
 
 
 def test_delete_task(populated_db):
@@ -156,8 +199,15 @@ def test_delete_task(populated_db):
     assert len(tasks) == 1 and tasks[0]["task_text"] == "Task 2"
 
 
+def test_delete_task_database_error():
+    with patch("sqlite3.connect", side_effect=sqlite3.Error("Connection failed")):
+        with pytest.raises(DatabaseError, match="Failed to delete task"):
+            db.delete_task(1)
+
+
 def test_delete_queue_empty(temp_db):
-    assert db.delete_queue() == []
+    with pytest.raises(EmptyQueueError, match="No tasks in 'default' queue"):
+        db.delete_queue()
 
 
 def test_delete_queue(populated_db):
@@ -173,6 +223,12 @@ def test_delete_custom_queue(populated_db):
     assert len(default_tasks) == 2
 
 
+def test_delete_queue_database_error():
+    with patch("sqlite3.connect", side_effect=sqlite3.Error("Connection failed")):
+        with pytest.raises(DatabaseError, match="Failed to delete queue"):
+            db.delete_queue()
+
+
 def test_list_queues_empty(temp_db):
     assert db.list_queues() == []
 
@@ -184,8 +240,17 @@ def test_list_queues(populated_db):
     assert queue_dict["default"] == 2 and queue_dict["project"] == 2
 
 
+def test_list_queues_database_error():
+    with patch("sqlite3.connect", side_effect=sqlite3.Error("Connection failed")):
+        with pytest.raises(DatabaseError, match="Failed to list queues"):
+            db.list_queues()
+
+
 def test_list_queues_after_deletion(populated_db):
-    db.delete_queue("project")
+    try:
+        db.delete_queue("project")
+    except EmptyQueueError:
+        pass  # We're not testing this here
     queues = db.list_queues()
     assert len(queues) == 1 and queues[0][0] == "default"
 
@@ -209,10 +274,21 @@ def test_find_by_id_or_name_with_valid_id(populated_db):
     assert is_id and task_id == existing_id
 
 
+def test_find_by_id_or_name_database_error():
+    with patch("sqlite3.connect", side_effect=sqlite3.Error("Connection failed")):
+        with pytest.raises(DatabaseError, match="Failed to find task"):
+            db.find_by_id_or_name("1")
+
+
 def test_completed_tasks_are_excluded(temp_db):
     db.add_task("Task to complete")
     assert len(db.list_tasks()) == 1
-    db.pop_first()
+
+    try:
+        db.pop_first()
+    except EmptyQueueError:
+        pytest.fail("Should not raise EmptyQueueError")
+
     assert len(db.list_tasks()) == 0
     assert db.add_task("Task to complete")
 
@@ -240,6 +316,14 @@ def test_concurrent_operations(temp_db):
     for i in range(100):
         db.add_task(f"Task {i}")
     assert len(db.list_tasks()) == 100
+
+    popped = 0
     for _ in range(50):
-        db.pop_first()
+        try:
+            db.pop_first()
+            popped += 1
+        except EmptyQueueError:
+            break
+
+    assert popped == 50
     assert len(db.list_tasks()) == 50

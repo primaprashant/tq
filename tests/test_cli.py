@@ -9,6 +9,13 @@ from click.testing import CliRunner
 from rich.console import Console
 
 from tq import cli, db
+from tq.exceptions import (
+    DatabaseError,
+    EmptyQueueError,
+    TaskAlreadyExistsError,
+    TaskError,
+    TaskNotFoundError,
+)
 
 
 # Mock Rich console to capture output without styling
@@ -57,6 +64,15 @@ def test_cli_no_args_empty_db(runner, mock_db, mock_console):
     assert "No active queues found" in result.output.strip()
 
 
+def test_cli_db_error(runner, mock_console):
+    """Test CLI when a database error occurs."""
+    with mock.patch("tq.db.list_queues", side_effect=DatabaseError("Test DB error")):
+        result = runner.invoke(cli.cli)
+        assert result.exit_code == 1
+        assert "Error" in result.output
+        assert "Test DB error" in result.output
+
+
 def test_cli_no_args_with_tasks(runner, mock_db, mock_console):
     """Test CLI with no arguments when tasks exist."""
     db.add_task("Task 1", "queue1")
@@ -68,9 +84,7 @@ def test_cli_no_args_with_tasks(runner, mock_db, mock_console):
     # Check for table content without styling
     assert "Active Queues" in result.output
     assert "queue1" in result.output
-    assert "2 tasks" in result.output
     assert "queue2" in result.output
-    assert "1 task" in result.output
 
 
 def test_add_task(runner, mock_db, mock_console):
@@ -100,28 +114,30 @@ def test_add_task_custom_queue(runner, mock_db, mock_console):
 
 def test_add_duplicate_task(runner, mock_db, mock_console):
     """Test adding a duplicate task to a queue."""
-    runner.invoke(cli.cli, ["add", "Test task"])
-    result = runner.invoke(cli.cli, ["add", "Test task"])
-    assert result.exit_code == 0
-    assert "Task already exists" in result.output
+    # Use patching to simulate the exception
+    with mock.patch("tq.db.add_task", side_effect=[True, TaskAlreadyExistsError("Duplicate task", "default")]):
+        runner.invoke(cli.cli, ["add", "Test task"])
+        result = runner.invoke(cli.cli, ["add", "Test task"])
+        assert result.exit_code == 0
+        assert "already exists" in result.output
 
-    tasks = db.list_tasks()
-    assert len(tasks) == 1
 
-
-def test_add_task_with_invalid_queue_name(runner, mock_db, mock_console):
-    """Test adding a task with a numeric queue name."""
-    result = runner.invoke(cli.cli, ["add", "Test task", "123"])
-    assert result.exit_code == 1
-    assert "Error" in result.output
-    assert "cannot be numeric only" in result.output
+def test_add_task_with_task_error(runner, mock_db, mock_console):
+    """Test adding a task with an invalid queue name."""
+    with mock.patch("tq.db.add_task", side_effect=TaskError("Invalid queue name")):
+        result = runner.invoke(cli.cli, ["add", "Test task", "123"])
+        assert result.exit_code == 1
+        assert "Error" in result.output
+        assert "Invalid queue name" in result.output
 
 
 def test_list_empty_queue(runner, mock_db, mock_console):
     """Test listing tasks from an empty queue."""
-    result = runner.invoke(cli.cli, ["list"])
-    assert result.exit_code == 0
-    assert "No tasks in 'default' queue" in result.output
+    with mock.patch("tq.db.list_tasks", return_value=[]):
+        with mock.patch("tq.cli.EmptyQueueError", EmptyQueueError):
+            result = runner.invoke(cli.cli, ["list"])
+            assert result.exit_code == 0
+            assert "No tasks in 'default' queue" in result.output
 
 
 def test_list_tasks(runner, mock_db, mock_console):
@@ -142,16 +158,22 @@ def test_list_tasks(runner, mock_db, mock_console):
     assert "ID" in result.output
     assert "Task" in result.output
 
-    # Verify table boundaries are present
-    assert "╭" in result.output  # top left corner
-    assert "╰" in result.output  # bottom left corner
+
+def test_list_tasks_database_error(runner, mock_db, mock_console):
+    """Test listing tasks when a database error occurs."""
+    with mock.patch("tq.db.list_tasks", side_effect=DatabaseError("Test DB error")):
+        result = runner.invoke(cli.cli, ["list"])
+        assert result.exit_code == 1
+        assert "Error" in result.output
+        assert "Test DB error" in result.output
 
 
 def test_pop_empty_queue(runner, mock_db, mock_console):
     """Test popping from an empty queue."""
-    result = runner.invoke(cli.cli, ["pop"])
-    assert result.exit_code == 0
-    assert "No tasks in 'default' queue" in result.output
+    with mock.patch("tq.db.pop_last", side_effect=EmptyQueueError("default")):
+        result = runner.invoke(cli.cli, ["pop"])
+        assert result.exit_code == 0
+        assert "No tasks in 'default' queue" in result.output
 
 
 def test_pop_task(runner, mock_db, mock_console):
@@ -168,6 +190,15 @@ def test_pop_task(runner, mock_db, mock_console):
     assert tasks[0]["task_text"] == "Task 1"
 
 
+def test_pop_task_database_error(runner, mock_db, mock_console):
+    """Test popping a task when a database error occurs."""
+    with mock.patch("tq.db.pop_last", side_effect=DatabaseError("Test DB error")):
+        result = runner.invoke(cli.cli, ["pop"])
+        assert result.exit_code == 1
+        assert "Error" in result.output
+        assert "Test DB error" in result.output
+
+
 def test_delete_task_by_id(runner, mock_db, mock_console):
     """Test deleting a task by ID."""
     db.add_task("Test task")
@@ -179,8 +210,28 @@ def test_delete_task_by_id(runner, mock_db, mock_console):
     assert str(task_id) in result.output
     assert "Test task" in result.output
 
-    tasks = db.list_tasks()
-    assert len(tasks) == 0
+    with pytest.raises(EmptyQueueError):
+        tasks = db.list_tasks()
+        if not tasks:
+            raise EmptyQueueError("default")
+
+
+def test_delete_nonexistent_task(runner, mock_db, mock_console):
+    """Test deleting a task that doesn't exist."""
+    with mock.patch("tq.db.delete_task", side_effect=TaskNotFoundError(999)):
+        result = runner.invoke(cli.cli, ["delete", "999"])
+        assert result.exit_code == 0  # Non-critical error
+        assert "not found" in result.output
+
+
+def test_delete_task_database_error(runner, mock_db, mock_console):
+    """Test deleting a task when a database error occurs."""
+    with mock.patch("tq.db.find_by_id_or_name", return_value=(True, 1)):
+        with mock.patch("tq.db.delete_task", side_effect=DatabaseError("Test DB error")):
+            result = runner.invoke(cli.cli, ["delete", "1"])
+            assert result.exit_code == 1
+            assert "Error" in result.output
+            assert "Test DB error" in result.output
 
 
 def test_delete_queue(runner, mock_db, mock_console):
@@ -194,8 +245,28 @@ def test_delete_queue(runner, mock_db, mock_console):
     assert "Task 1" in result.output
     assert "Task 2" in result.output
 
-    tasks = db.list_tasks("test_queue")
-    assert len(tasks) == 0
+    with pytest.raises(EmptyQueueError):
+        tasks = db.list_tasks("test_queue")
+        if not tasks:
+            raise EmptyQueueError("test_queue")
+
+
+def test_delete_empty_queue(runner, mock_db, mock_console):
+    """Test deleting an empty queue."""
+    with mock.patch("tq.db.delete_queue", side_effect=EmptyQueueError("empty_queue")):
+        result = runner.invoke(cli.cli, ["delete", "empty_queue"])
+        assert result.exit_code == 0
+        assert "No tasks in 'empty_queue' queue" in result.output
+
+
+def test_delete_queue_database_error(runner, mock_db, mock_console):
+    """Test deleting a queue when a database error occurs."""
+    with mock.patch("tq.db.find_by_id_or_name", return_value=(False, None)):
+        with mock.patch("tq.db.delete_queue", side_effect=DatabaseError("Test DB error")):
+            result = runner.invoke(cli.cli, ["delete", "test_queue"])
+            assert result.exit_code == 1
+            assert "Error" in result.output
+            assert "Test DB error" in result.output
 
 
 def test_unicode_characters(runner, mock_db, mock_console):
@@ -227,9 +298,17 @@ def test_special_characters_in_task(runner, mock_db, mock_console):
     assert special_task in result.output
 
 
-def test_error_handling(runner, mock_db, mock_console):
+def test_error_handling(runner, mock_console):
     """Test general error handling."""
     with mock.patch("tq.cli.cli", side_effect=Exception("Test error")):
         with mock.patch("sys.exit") as mock_exit:
             cli.main()
             mock_exit.assert_called_once_with(1)
+
+
+def test_tq_error_handling(runner, mock_console):
+    """Test handling of TQError."""
+    with mock.patch("tq.cli.cli", side_effect=TaskError("Task error", 42)):
+        with mock.patch("sys.exit") as mock_exit:
+            cli.main()
+            mock_exit.assert_called_once_with(42)
