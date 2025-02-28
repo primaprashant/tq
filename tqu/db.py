@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from tq.exceptions import (
+from tqu.exceptions import (
     ConfigError,
     DatabaseError,
     EmptyQueueError,
@@ -16,7 +16,7 @@ from tq.exceptions import (
 
 def get_db_path() -> str:
     try:
-        path = os.environ.get("TQ_DB_PATH", Path("~/.tq.sqlite").expanduser())
+        path = os.environ.get("TQU_DB_PATH", Path("~/.tqu.sqlite").expanduser())
         return str(path)
     except Exception as e:
         raise ConfigError(f"Failed to determine database path: {str(e)}")

@@ -1,8 +1,8 @@
 from typing import Any, Optional
 
 
-class TQError(Exception):
-    """Base exception for all TQ errors."""
+class TQUError(Exception):
+    """Base exception for all TQU errors."""
 
     def __init__(self, message: str = "", code: Optional[int] = None) -> None:
         self.message = message
@@ -10,7 +10,7 @@ class TQError(Exception):
         super().__init__(message)
 
 
-class QueueError(TQError):
+class QueueError(TQUError):
     """Errors related to queue operations."""
 
     pass
@@ -30,7 +30,7 @@ class EmptyQueueError(QueueError):
         super().__init__(f"No tasks in '{queue_name}' queue.")
 
 
-class TaskError(TQError):
+class TaskError(TQUError):
     """Errors related to task operations."""
 
     pass
@@ -50,7 +50,7 @@ class TaskAlreadyExistsError(TaskError):
         super().__init__(f"Task already exists in '{queue_name}' queue: {task_text}")
 
 
-class DatabaseError(TQError):
+class DatabaseError(TQUError):
     """Errors related to database operations."""
 
     def __init__(self, message: str = "Database error occurred", original_error: Optional[Exception] = None) -> None:
@@ -58,7 +58,7 @@ class DatabaseError(TQError):
         super().__init__(message)
 
 
-class ConfigError(TQError):
+class ConfigError(TQUError):
     """Errors related to configuration."""
 
     pass

@@ -1,6 +1,6 @@
-# tq – A Minimal CLI for Queue-Based Task Tracking
+# tqu – A Minimal CLI for Queue-Based Task Tracking
 
-`tq` is a lightweight command-line tool designed for queue-based task tracking with minimal overhead. Instead of complicated features like priorities or due dates, `tq` uses a simple push/pop workflow across one or multiple queues. Whether you're managing everyday chores, bills, or side projects, `tq` keeps task tracking fast, intuitive, and distraction-free.
+`tqu` is a lightweight command-line tool designed for queue-based task tracking with minimal overhead. Instead of complicated features like priorities or due dates, `tqu` uses a simple push/pop workflow across one or multiple queues. Whether you're managing everyday chores, bills, or side projects, `tqu` keeps task tracking fast, intuitive, and distraction-free.
 
 ## Highlights
 
@@ -14,24 +14,24 @@
 1. Install (recommended via [pipx](https://pypa.github.io/pipx/)):
 
    ```
-   pipx install tq
+   pipx install tqu
    ```
 
    or
 
    ```
-   pip install --user tq
+   pip install --user tqu
    ```
 
-2. (Optional) By default, `tq` stores its database at `~/.tq.sqlite`. You can customize the location by setting the `TQ_DB_PATH` environment variable:
+2. (Optional) By default, `tqu` stores its database at `~/.tqu.sqlite`. You can customize the location by setting the `TQU_DB_PATH` environment variable:
 
    ```bash
-   export TQ_DB_PATH="/path/to/your/custom/database.sqlite"
+   export TQU_DB_PATH="/path/to/your/custom/database.sqlite"
    ```
 
 ## Usage
 
-Below are the commands you can run with tq. In all cases, if you omit the queue name, `default` is used.
+Below are the commands you can run with tqu. In all cases, if you omit the queue name, `default` is used.
 
 ### Basic: Single Queue Mode
 
@@ -40,13 +40,13 @@ For simple task management, you can use the default queue without specifying a q
 1. Add a task to the default queue:
 
    ```
-   tq add "Pay electricity bill"
+   tqu add "Pay electricity bill"
    ```
 
 2. List tasks in the default queue:
 
    ```
-   tq list
+   tqu list
    ```
 
    This shows active tasks along with their IDs, oldest added task first.
@@ -54,13 +54,13 @@ For simple task management, you can use the default queue without specifying a q
 3. Remove the most recent (last) task from the default queue:
 
    ```
-   tq pop
+   tqu pop
    ```
 
    or
 
    ```
-   tq poplast
+   tqu poplast
    ```
 
    This prints the removed task.
@@ -68,7 +68,7 @@ For simple task management, you can use the default queue without specifying a q
 4. Remove the least recent (first) task from the default queue:
 
    ```
-   tq popfirst
+   tqu popfirst
    ```
 
    This prints the removed task.
@@ -76,12 +76,12 @@ For simple task management, you can use the default queue without specifying a q
 5. Delete a task by its unique integer ID (no queue needed):
 
    ```
-   tq delete <task_id>
+   tqu delete <task_id>
    ```
 
 6. Delete the default queue (and all tasks in it):
    ```
-   tq delete
+   tqu delete
    ```
    This prints all removed tasks from that queue.
 
@@ -92,21 +92,21 @@ Organize tasks into separate queues for different contexts. For multiple queues,
 1. Add a task to a specific queue:
 
    ```
-   tq add "Buy groceries" errands
+   tqu add "Buy groceries" errands
    ```
 
-   If the queue “errands” does not exist, tq creates it automatically. Note that, queue name can not be only numeric.
+   If the queue “errands” does not exist, tqu creates it automatically. Note that, queue name can not be only numeric.
 
 2. List tasks in a specific queue:
 
    ```
-   tq list errands
+   tqu list errands
    ```
 
 3. Pop the most recent task from a specific queue:
 
    ```
-   tq pop errands
+   tqu pop errands
    ```
 
    (or “poplast”)
@@ -114,29 +114,29 @@ Organize tasks into separate queues for different contexts. For multiple queues,
 4. Pop the least recent task from a specific queue:
 
    ```
-   tq popfirst errands
+   tqu popfirst errands
    ```
 
 5. Delete an entire queue (and all tasks in it):
 
    ```
-   tq delete errands
+   tqu delete errands
    ```
 
 6. Delete a single task by ID (no need for queue name):
 
    ```
-   tq delete <task_id>
+   tqu delete <task_id>
    ```
 
 7. List all queues that have at least one active task:
    ```
-   tq
+   tqu
    ```
 
 ## Everyday Use Cases
 
-Here are some everyday scenarios in which tq can keep you organized:
+Here are some everyday scenarios in which tqu can keep you organized:
 
 1. Daily Planning: Keep track of things you need to do today or this month in queues like `today`, `month`, `feb2025`, or `biils`.
 2. Reimbursements: Keep track of reimbursements you need to file at the end of the month in a queue named `reimbursements`.

@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 import pytest
 
-from tq import db
-from tq.exceptions import (
+from tqu import db
+from tqu.exceptions import (
     ConfigError,
     DatabaseError,
     EmptyQueueError,
@@ -23,7 +23,7 @@ from tq.exceptions import (
 def temp_db():
     temp_dir = tempfile.mkdtemp()
     db_path = Path(temp_dir) / "test.sqlite"
-    with patch.dict(os.environ, {"TQ_DB_PATH": str(db_path)}):
+    with patch.dict(os.environ, {"TQU_DB_PATH": str(db_path)}):
         db.init_db()
         yield db_path
     shutil.rmtree(temp_dir)
@@ -40,12 +40,12 @@ def populated_db(temp_db):
 
 def test_get_db_path_default():
     with patch.dict(os.environ, {}, clear=True):
-        assert str(db.get_db_path()) == str(Path("~/.tq.sqlite").expanduser())
+        assert str(db.get_db_path()) == str(Path("~/.tqu.sqlite").expanduser())
 
 
 def test_get_db_path_custom():
     custom_path = "/tmp/custom.sqlite"
-    with patch.dict(os.environ, {"TQ_DB_PATH": custom_path}):
+    with patch.dict(os.environ, {"TQU_DB_PATH": custom_path}):
         assert str(db.get_db_path()) == custom_path
 
 

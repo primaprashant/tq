@@ -1,6 +1,6 @@
 [project]
-name = "tq"
-version = "1.0.1"
+name = "tqu"
+version = "1.0.0"
 description = "A Minimal CLI for Queue-Based Task Tracking"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -16,11 +16,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/primaprashant/tq"
-Issues = "https://github.com/primaprashant/tq/issues"
+Homepage = "https://github.com/primaprashant/tqu"
+Issues = "https://github.com/primaprashant/tqu/issues"
 
 [project.scripts]
-tq = "tq.cli:cli"
+tqu = "tqu.cli:cli"
 
 [build-system]
 requires = ["hatchling"]

@@ -9,14 +9,14 @@ from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
-from tq import db
-from tq.exceptions import (
+from tqu import db
+from tqu.exceptions import (
     DatabaseError,
     EmptyQueueError,
     QueueNotFoundError,
     TaskAlreadyExistsError,
     TaskNotFoundError,
-    TQError,
+    TQUError,
 )
 
 console = Console()
@@ -76,7 +76,7 @@ def add(task_text: str, queue: str) -> None:
         console.print(text)
     except TaskAlreadyExistsError as e:
         console.print(f"[yellow]{e.message}[/yellow]")
-    except TQError as e:
+    except TQUError as e:
         exit_with_error(e.message)
 
 
@@ -99,7 +99,7 @@ def list(queue: str) -> None:
         console.print(table)
     except EmptyQueueError as e:
         console.print(Panel(e.message, style="yellow", box=box.ROUNDED))
-    except TQError as e:
+    except TQUError as e:
         exit_with_error(e.message)
 
 
@@ -115,7 +115,7 @@ def pop_task(queue: str, pop_function: Callable[[str], Dict[str, Any]]) -> None:
         console.print(text)
     except EmptyQueueError as e:
         console.print(Panel(e.message, style="yellow", box=box.ROUNDED))
-    except TQError as e:
+    except TQUError as e:
         exit_with_error(e.message)
 
 
@@ -151,7 +151,7 @@ def delete(id_or_queue: str) -> None:
             delete_task_by_id(entity_id)
         else:
             delete_queue_by_name(id_or_queue)
-    except TQError as e:
+    except TQUError as e:
         exit_with_error(e.message)
 
 
@@ -173,7 +173,7 @@ def delete_task_by_id(task_id: Optional[int]) -> None:
         console.print(text)
     except TaskNotFoundError as e:
         console.print(f"[yellow]{e.message}[/yellow]")
-    except TQError as e:
+    except TQUError as e:
         exit_with_error(e.message)
 
 
@@ -194,7 +194,7 @@ def delete_queue_by_name(queue_name: str) -> None:
         console.print(Panel(e.message, style="yellow", box=box.ROUNDED))
     except QueueNotFoundError as e:
         exit_with_error(e.message)
-    except TQError as e:
+    except TQUError as e:
         exit_with_error(e.message)
 
 
@@ -208,7 +208,7 @@ def main() -> None:
     """Main entry point for the CLI application."""
     try:
         cli()
-    except TQError as e:
+    except TQUError as e:
         exit_with_error(e.message, e.code if e.code is not None else 1)
     except Exception as e:
         exit_with_error(f"Unexpected error: {str(e)}")

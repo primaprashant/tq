@@ -13,5 +13,5 @@ publish-test:
 
 publish:
 	uv build
-	@if [ -z "$(TEST_PYPI_TOKEN)" ]; then echo "Error: TEST_PYPI_TOKEN is not set"; exit 1; fi
+	@if [ -z "$(PYPI_TOKEN)" ]; then echo "Error: PYPI_TOKEN is not set"; exit 1; fi
 	uv publish --token ${PYPI_TOKEN}

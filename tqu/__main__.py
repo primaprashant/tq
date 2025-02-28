@@ -1,4 +1,4 @@
-from tq.cli import main
+from tqu.cli import main
 
 if __name__ == "__main__":
     main()
