@@ -2,6 +2,8 @@
 
 `tqu` is a lightweight command-line tool designed for queue-based task tracking with minimal overhead. Instead of complicated features like priorities or due dates, `tqu` uses a simple push/pop workflow across one or multiple queues. Whether you're managing everyday chores, bills, or side projects, `tqu` keeps task tracking fast, intuitive, and distraction-free.
 
+![tqu demo](./scripts/demo.gif)
+
 ## Highlights
 
 - **Minimalist approach**: Focuses solely on adding and removing tasks in a queue. No complicated features like priorities, due dates, or attachments.
@@ -11,7 +13,12 @@
 
 ## Installation
 
-1. Install (recommended via [pipx](https://pypa.github.io/pipx/)):
+1. Install (recommended via [uv](https://github.com/astral-sh/uv)):
+   ```
+   uv tool install tqu
+   ```
+
+   or
 
    ```
    pipx install tqu
